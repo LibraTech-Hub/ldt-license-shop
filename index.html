@@ -396,122 +396,123 @@
             }
         }
         
-        // ========== 页面加载时检查 URL hash ==========
+        // ========== 页面加载初始化 ==========
         window.addEventListener('DOMContentLoaded', function() {
+            // 检查 URL hash 并自动切换到激活 tab
             const hash = window.location.hash;
             if (hash === '#activate' || hash === '#activation') {
                 switchTab('activation');
             }
-        });
-        
-        // ========== 激活页面逻辑 ==========
-        const form = document.getElementById('activationForm');
-        const machineIdInput = document.getElementById('machineId');
-        const unlockCodeInput = document.getElementById('unlockCode');
-        const btnGenerate = document.getElementById('btnGenerate');
-        const loading = document.getElementById('loading');
-        const result = document.getElementById('result');
-        const resultTitle = document.getElementById('resultTitle');
-        const resultMessage = document.getElementById('resultMessage');
-        const machineIdError = document.getElementById('machineIdError');
-        const unlockCodeError = document.getElementById('unlockCodeError');
-        
-        function validateMachineId(value) {
-            return /^[A-F0-9]{4}(-[A-F0-9]{4}){7}$/.test(value);
-        }
-        function validateUnlockCode(value) {
-            return /^UNLOCK-[A-F0-9]{4}-[A-F0-9]{4}$/.test(value);
-        }
-        
-        machineIdInput.addEventListener('input', (e) => {
-            e.target.value = e.target.value.toUpperCase();
-            if (e.target.value) {
-                if (validateMachineId(e.target.value)) {
-                    e.target.classList.remove('error');
-                    machineIdError.classList.remove('show');
-                } else {
-                    e.target.classList.add('error');
-                    machineIdError.classList.add('show');
+            
+            // ========== 激活页面逻辑 ==========
+            const form = document.getElementById('activationForm');
+            const machineIdInput = document.getElementById('machineId');
+            const unlockCodeInput = document.getElementById('unlockCode');
+            const btnGenerate = document.getElementById('btnGenerate');
+            const loading = document.getElementById('loading');
+            const result = document.getElementById('result');
+            const resultTitle = document.getElementById('resultTitle');
+            const resultMessage = document.getElementById('resultMessage');
+            const machineIdError = document.getElementById('machineIdError');
+            const unlockCodeError = document.getElementById('unlockCodeError');
+            
+            function validateMachineId(value) {
+                return /^[A-F0-9]{4}(-[A-F0-9]{4}){7}$/.test(value);
+            }
+            function validateUnlockCode(value) {
+                return /^UNLOCK-[A-F0-9]{4}-[A-F0-9]{4}$/.test(value);
+            }
+            
+            machineIdInput.addEventListener('input', (e) => {
+                e.target.value = e.target.value.toUpperCase();
+                if (e.target.value) {
+                    if (validateMachineId(e.target.value)) {
+                        e.target.classList.remove('error');
+                        machineIdError.classList.remove('show');
+                    } else {
+                        e.target.classList.add('error');
+                        machineIdError.classList.add('show');
+                    }
                 }
-            }
-        });
-        
-        unlockCodeInput.addEventListener('input', (e) => {
-            e.target.value = e.target.value.toUpperCase();
-            if (e.target.value) {
-                if (validateUnlockCode(e.target.value)) {
-                    e.target.classList.remove('error');
-                    unlockCodeError.classList.remove('show');
-                } else {
-                    e.target.classList.add('error');
-                    unlockCodeError.classList.add('show');
+            });
+            
+            unlockCodeInput.addEventListener('input', (e) => {
+                e.target.value = e.target.value.toUpperCase();
+                if (e.target.value) {
+                    if (validateUnlockCode(e.target.value)) {
+                        e.target.classList.remove('error');
+                        unlockCodeError.classList.remove('show');
+                    } else {
+                        e.target.classList.add('error');
+                        unlockCodeError.classList.add('show');
+                    }
                 }
-            }
-        });
-        
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const machineId = machineIdInput.value.trim();
-            const unlockCode = unlockCodeInput.value.trim();
-            let hasError = false;
+            });
             
-            if (!validateMachineId(machineId)) {
-                machineIdInput.classList.add('error');
-                machineIdError.classList.add('show');
-                hasError = true;
-            }
-            if (!validateUnlockCode(unlockCode)) {
-                unlockCodeInput.classList.add('error');
-                unlockCodeError.classList.add('show');
-                hasError = true;
-            }
-            if (hasError) return;
-            
-            btnGenerate.disabled = true;
-            loading.classList.add('show');
-            result.classList.remove('show');
-            
-            try {
-                const response = await fetch(API_URL, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ machine_id: machineId, unlock_code: unlockCode })
-                });
-                const data = await response.json();
-                loading.classList.remove('show');
-                btnGenerate.disabled = false;
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const machineId = machineIdInput.value.trim();
+                const unlockCode = unlockCodeInput.value.trim();
+                let hasError = false;
                 
-                if (data.success && data.license_key) {
-                    downloadLicenseFile(data.license_key);
-                    showResult('success', '授权文件生成成功！', 'license.key 文件已开始下载。请通过 LDT Editor 的"导入授权文件"功能激活。');
-                } else {
-                    showResult('error', '生成失败', data.error || '未知错误，请重试或联系客服');
+                if (!validateMachineId(machineId)) {
+                    machineIdInput.classList.add('error');
+                    machineIdError.classList.add('show');
+                    hasError = true;
                 }
-            } catch (error) {
-                loading.classList.remove('show');
-                btnGenerate.disabled = false;
-                showResult('error', '网络错误', '无法连接到服务器，请检查网络连接后重试');
-                console.error('Error:', error);
+                if (!validateUnlockCode(unlockCode)) {
+                    unlockCodeInput.classList.add('error');
+                    unlockCodeError.classList.add('show');
+                    hasError = true;
+                }
+                if (hasError) return;
+                
+                btnGenerate.disabled = true;
+                loading.classList.add('show');
+                result.classList.remove('show');
+                
+                try {
+                    const response = await fetch(API_URL, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ machine_id: machineId, unlock_code: unlockCode })
+                    });
+                    const data = await response.json();
+                    loading.classList.remove('show');
+                    btnGenerate.disabled = false;
+                    
+                    if (data.success && data.license_key) {
+                        downloadLicenseFile(data.license_key);
+                        showResult('success', '授权文件生成成功！', 'license.key 文件已开始下载。请通过 LDT Editor 的"导入授权文件"功能激活。');
+                    } else {
+                        showResult('error', '生成失败', data.error || '未知错误，请重试或联系客服');
+                    }
+                } catch (error) {
+                    loading.classList.remove('show');
+                    btnGenerate.disabled = false;
+                    showResult('error', '网络错误', '无法连接到服务器，请检查网络连接后重试');
+                    console.error('Error:', error);
+                }
+            });
+            
+            function downloadLicenseFile(licenseKey) {
+                const blob = new Blob([licenseKey], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'license.key';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
             }
-        });
         
-        function downloadLicenseFile(licenseKey) {
-            const blob = new Blob([licenseKey], { type: 'text/plain' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'license.key';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        }
-        
-        function showResult(type, title, message) {
-            result.className = 'result show ' + type;
-            resultTitle.textContent = title;
-            resultMessage.textContent = message;
-        }
+            function showResult(type, title, message) {
+                result.className = 'result show ' + type;
+                resultTitle.textContent = title;
+                resultMessage.textContent = message;
+            }
+        }); // DOMContentLoaded 结束
     </script>
 </body>
 </html>
