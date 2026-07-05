@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LDT Editor 标准版激活</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Microsoft YaHei", sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 500px;
+            width: 100%;
+            padding: 40px;
+        }
+        .header { text-align: center; margin-bottom: 32px; }
+        .header h1 { font-size: 28px; color: #1a202c; margin-bottom: 8px; }
+        .header .subtitle { font-size: 16px; color: #718096; }
+        .header .price { font-size: 20px; color: #667eea; font-weight: bold; margin-top: 8px; }
+        .form-group { margin-bottom: 24px; }
+        .form-group label { display: block; font-size: 14px; font-weight: 600; color: #4a5568; margin-bottom: 8px; }
+        .form-group input {
+            width: 100%;
+            padding: 12px 16px;
+            font-size: 14px;
+            font-family: 'Courier New', monospace;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            transition: border-color 0.2s;
+        }
+        .form-group input:focus { outline: none; border-color: #667eea; }
+        .form-group input.error { border-color: #f56565; }
+        .form-group .hint { font-size: 12px; color: #a0aec0; margin-top: 4px; }
+        .form-group .error-message { font-size: 12px; color: #f56565; margin-top: 4px; display: none; }
+        .form-group .error-message.show { display: block; }
+        .btn-generate {
+            width: 100%;
+            padding: 16px;
+            font-size: 16px;
+            font-weight: bold;
+            color: white;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .btn-generate:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4); }
+        .btn-generate:disabled { opacity: 0.6; cursor: not-allowed; }
+        .loading { display: none; text-align: center; margin-top: 24px; }
+        .loading.show { display: block; }
+        .loading-spinner {
+            display: inline-block;
+            width: 32px;
+            height: 32px;
+            border: 3px solid #f3f4f6;
+            border-top-color: #667eea;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .result { display: none; margin-top: 24px; padding: 16px; border-radius: 8px; }
+        .result.show { display: block; }
+        .result.success { background: #f0fdf4; border: 2px solid #86efac; }
+        .result.error { background: #fef2f2; border: 2px solid #fca5a5; }
+        .result-title { font-size: 14px; font-weight: bold; margin-bottom: 8px; }
+        .result.success .result-title { color: #16a34a; }
+        .result.error .result-title { color: #dc2626; }
+        .result-message { font-size: 14px; color: #4a5568; }
+        .note { text-align: center; color: #a0aec0; font-size: 12px; margin-top: 24px; line-height: 1.6; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎮 LDT Editor 标准版激活</h1>
+            <p class="subtitle">彩虹岛 / LaTale 数据表编辑工具</p>
+            <p class="price">¥139 永久授权</p>
+        </div>
+        <form id="activationForm">
+            <div class="form-group">
+                <label for="machineId">机器码</label>
+                <input type="text" id="machineId" placeholder="XXXX-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX" maxlength="39" required>
+                <p class="hint">请从 LDT Editor 复制完整机器码</p>
+                <p class="error-message" id="machineIdError">机器码格式错误</p>
+            </div>
+            <div class="form-group">
+                <label for="unlockCode">解锁码</label>
+                <input type="text" id="unlockCode" placeholder="UNLOCK-XXXX-XXXX" maxlength="17" required>
+                <p class="hint">支付后通过邮件获取</p>
+                <p class="error-message" id="unlockCodeError">解锁码格式错误</p>
+            </div>
+            <button type="submit" class="btn-generate" id="btnGenerate">生成授权文件</button>
+        </form>
+        <div class="loading" id="loading">
+            <div class="loading-spinner"></div>
+            <p style="margin-top: 12px; color: #718096;">正在生成授权文件...</p>
+        </div>
+        <div class="result" id="result">
+            <div class="result-title" id="resultTitle"></div>
+            <div class="result-message" id="resultMessage"></div>
+        </div>
+        <p class="note">
+            * 授权文件绑定机器码，仅限单台设备使用<br>
+            * 生成成功后请通过 LDT Editor 的"导入授权文件"功能激活
+        </p>
+    </div>
+    <script>
+        const API_URL = 'https://ldt-license-worker.libratech.workers.dev/api/generate-license';
+        const form = document.getElementById('activationForm');
+        const machineIdInput = document.getElementById('machineId');
+        const unlockCodeInput = document.getElementById('unlockCode');
+        const btnGenerate = document.getElementById('btnGenerate');
+        const loading = document.getElementById('loading');
+        const result = document.getElementById('result');
+        const resultTitle = document.getElementById('resultTitle');
+        const resultMessage = document.getElementById('resultMessage');
+        const machineIdError = document.getElementById('machineIdError');
+        const unlockCodeError = document.getElementById('unlockCodeError');
+        
+        function validateMachineId(value) {
+            return /^[A-F0-9]{4}(-[A-F0-9]{4}){7}$/.test(value);
+        }
+        function validateUnlockCode(value) {
+            return /^UNLOCK-[A-F0-9]{4}-[A-F0-9]{4}$/.test(value);
+        }
+        
+        machineIdInput.addEventListener('input', (e) => {
+            e.target.value = e.target.value.toUpperCase();
+            if (e.target.value) {
+                if (validateMachineId(e.target.value)) {
+                    e.target.classList.remove('error');
+                    machineIdError.classList.remove('show');
+                } else {
+                    e.target.classList.add('error');
+                    machineIdError.classList.add('show');
+                }
+            }
+        });
+        
+        unlockCodeInput.addEventListener('input', (e) => {
+            e.target.value = e.target.value.toUpperCase();
+            if (e.target.value) {
+                if (validateUnlockCode(e.target.value)) {
+                    e.target.classList.remove('error');
+                    unlockCodeError.classList.remove('show');
+                } else {
+                    e.target.classList.add('error');
+                    unlockCodeError.classList.add('show');
+                }
+            }
+        });
+        
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const machineId = machineIdInput.value.trim();
+            const unlockCode = unlockCodeInput.value.trim();
+            let hasError = false;
+            
+            if (!validateMachineId(machineId)) {
+                machineIdInput.classList.add('error');
+                machineIdError.classList.add('show');
+                hasError = true;
+            }
+            if (!validateUnlockCode(unlockCode)) {
+                unlockCodeInput.classList.add('error');
+                unlockCodeError.classList.add('show');
+                hasError = true;
+            }
+            if (hasError) return;
+            
+            btnGenerate.disabled = true;
+            loading.classList.add('show');
+            result.classList.remove('show');
+            
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ machine_id: machineId, unlock_code: unlockCode })
+                });
+                const data = await response.json();
+                loading.classList.remove('show');
+                btnGenerate.disabled = false;
+                
+                if (data.success && data.license_key) {
+                    downloadLicenseFile(data.license_key);
+                    showResult('success', '授权文件生成成功！', 'license.key 文件已开始下载。请通过 LDT Editor 的"导入授权文件"功能激活。');
+                } else {
+                    showResult('error', '生成失败', data.error || '未知错误，请重试或联系客服');
+                }
+            } catch (error) {
+                loading.classList.remove('show');
+                btnGenerate.disabled = false;
+                showResult('error', '网络错误', '无法连接到服务器，请检查网络连接后重试');
+                console.error('Error:', error);
+            }
+        });
+        
+        function downloadLicenseFile(licenseKey) {
+            const blob = new Blob([licenseKey], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'license.key';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+        
+        function showResult(type, title, message) {
+            result.className = 'result show ' + type;
+            resultTitle.textContent = title;
+            resultMessage.textContent = message;
+        }
+    </script>
+</body>
+</html>
