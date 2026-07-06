@@ -157,6 +157,27 @@
         }
         
         /* 激活页面 */
+        .proxy-notice {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            border: 2px solid #fbbf24;
+            border-radius: 12px;
+            padding: 16px 20px;
+            margin-bottom: 24px;
+            color: #78350f;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        .proxy-notice strong {
+            color: #92400e;
+            font-size: 15px;
+        }
+        .proxy-notice ul {
+            margin: 8px 0 0 20px;
+            padding: 0;
+        }
+        .proxy-notice li {
+            margin: 4px 0;
+        }
         .activation-section .form-group {
             margin-bottom: 24px;
         }
@@ -326,6 +347,14 @@
         <!-- Tab 2: 激活 -->
         <div id="activation-tab" class="tab-content">
             <div class="activation-section">
+                <div class="proxy-notice">
+                    <strong>⚠️ 国内用户请注意</strong><br>
+                    激活服务部署在 Cloudflare，国内网络可能无法直接访问。如果生成失败，请尝试：
+                    <ul>
+                        <li>使用代理工具（VPN / 加速器）</li>
+                        <li>或联系客服手动激活（微信/QQ：请见购买页面）</li>
+                    </ul>
+                </div>
                 <form id="activationForm">
                     <div class="form-group">
                         <label for="machineId">机器码</label>
